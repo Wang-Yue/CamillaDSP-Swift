@@ -1,0 +1,134 @@
+# CamillaDSP-Swift Example Configuration
+# 2-way crossover with room correction
+
+title: "2-Way Crossover"
+description: "Active crossover at 2kHz with basic room EQ"
+
+devices:
+  samplerate: 48000
+  chunksize: 1024
+  enable_rate_adjust: false
+  volume_ramp_time: 200
+  volume_limit: 0.0
+  capture:
+    type: CoreAudio
+    channels: 2
+    device: null            # null = system default
+  playback:
+    type: CoreAudio
+    channels: 4             # L-woofer, R-woofer, L-tweeter, R-tweeter
+    device: null
+
+filters:
+  # Volume control
+  main_volume:
+    type: Volume
+    parameters:
+      fader: Main
+      ramp_time: 200
+
+  # Crossover: Linkwitz-Riley 4th order at 2kHz
+  lp_2k:
+    type: BiquadCombo
+    parameters:
+      type: LinkwitzRileyLowpass
+      freq: 2000.0
+      order: 4
+
+  hp_2k:
+    type: BiquadCombo
+    parameters:
+      type: LinkwitzRileyHighpass
+      freq: 2000.0
+      order: 4
+
+  # Room correction EQ
+  room_eq:
+    type: Biquad
+    parameters:
+      type: Peaking
+      freq: 80.0
+      gain: -4.0
+      q: 2.0
+
+  # Subsonic filter
+  subsonic:
+    type: BiquadCombo
+    parameters:
+      type: ButterworthHighpass
+      freq: 25.0
+      order: 4
+
+  # Tweeter delay (align with woofer)
+  tweeter_delay:
+    type: Delay
+    parameters:
+      delay: 0.3
+      unit: ms
+
+  # Output limiter
+  limiter:
+    type: Limiter
+    parameters:
+      clip_limit: -0.5
+      soft_clip: true
+
+mixers:
+  # Duplicate stereo to 4 channels for crossover
+  stereo_to_4ch:
+    channels_in: 2
+    channels_out: 4
+    mapping:
+      - dest: 0   # L woofer
+        sources:
+          - channel: 0
+            gain: 0.0
+      - dest: 1   # R woofer
+        sources:
+          - channel: 1
+            gain: 0.0
+      - dest: 2   # L tweeter
+        sources:
+          - channel: 0
+            gain: 0.0
+      - dest: 3   # R tweeter
+        sources:
+          - channel: 1
+            gain: 0.0
+
+pipeline:
+  # Volume on both input channels
+  - type: Filter
+    channel: 0
+    names: [main_volume]
+  - type: Filter
+    channel: 1
+    names: [main_volume]
+
+  # Room EQ on both channels
+  - type: Filter
+    channel: 0
+    names: [room_eq, subsonic]
+  - type: Filter
+    channel: 1
+    names: [room_eq, subsonic]
+
+  # Split to 4 channels
+  - type: Mixer
+    name: stereo_to_4ch
+
+  # Low-pass for woofers (ch 0, 1)
+  - type: Filter
+    channel: 0
+    names: [lp_2k, limiter]
+  - type: Filter
+    channel: 1
+    names: [lp_2k, limiter]
+
+  # High-pass + delay for tweeters (ch 2, 3)
+  - type: Filter
+    channel: 2
+    names: [hp_2k, tweeter_delay, limiter]
+  - type: Filter
+    channel: 3
+    names: [hp_2k, tweeter_delay, limiter]

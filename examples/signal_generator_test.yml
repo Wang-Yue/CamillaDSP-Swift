@@ -1,0 +1,36 @@
+# Test configuration using signal generator (no audio devices needed)
+
+title: "Signal Generator Test"
+description: "Generate sine wave, apply EQ, output to file"
+
+devices:
+  samplerate: 48000
+  chunksize: 1024
+  capture:
+    type: SignalGenerator
+    channels: 2
+  playback:
+    type: Stdout
+    channels: 2
+    format: FLOAT32
+
+filters:
+  gain:
+    type: Gain
+    parameters:
+      gain: -6.0
+
+  lowpass:
+    type: Biquad
+    parameters:
+      type: Lowpass
+      freq: 5000.0
+      q: 0.707
+
+pipeline:
+  - type: Filter
+    channel: 0
+    names: [gain, lowpass]
+  - type: Filter
+    channel: 1
+    names: [gain, lowpass]
