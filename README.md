@@ -12,6 +12,20 @@ The project ships three products:
 | **camilladsp** | Command-line tool for headless operation |
 | **CamillaDSPMonitor** | Native macOS SwiftUI app with real-time monitoring and pipeline configuration |
 
+## Screenshot
+
+### Screenshot of the Dashboard
+
+![Dashboard](Screenshot-Dashboard.png)
+
+### Screenshot of the Device settings
+
+![Device](Screenshot-Device.png)
+
+### Screenshot of the EQ preset
+
+![EQ](Screenshot-EQ.png)
+
 ## Requirements
 
 - macOS 14+ (Sonoma)
